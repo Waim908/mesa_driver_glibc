@@ -1,3 +1,7 @@
+环境：ubuntu 24.04 proot
+
+必须：pd login ubuntu ```--no-sysvipc```
+
 # Turnip
 构建参数
 
