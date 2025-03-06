@@ -17,4 +17,10 @@
 meson build -Dprefix=~/panfrost -Dvulkan-drivers=panfrost -Dgallium-drivers=panfrost
 ```
 
-# Swrast
+# Swrast(llvm vulkan)
+
+构建参数
+
+```
+meson build -Dprefix=~/swrast -Dglx=xlib -Dgallium-drivers=swrast -Dvulkan-drivers=swrast
+```
