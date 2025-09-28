@@ -6,6 +6,16 @@
 
 ### 先通过```patch --dry-run -p1 < path/to/XXX.patch``` 试运行一遍！
 
+# v25版本补丁
+
+#### 补丁取代
+
+```mesa/wsi-termux-x11-v3.patch```=>```v25/wsi-termux-x11-fix2.patch```
+
+```mesa/0014-freedreno-HACK-GL_ARB_timer_query.patch```=>```v25/0014-freedreno-HACK-GL_ARB_timer_query2.patch``
+
+```mesa/0012-freedreno-drm-Add-more-APIs-to-per-backend-API.patch```=>```v25/0012-freedreno-drm-Add-more-APIs-to-per-backend-API2.patch```
+
 
 
 
@@ -51,3 +61,10 @@ meson setup builddir \
 
 - [gpkg/mesa](https://github.com/termux-pacman/glibc-packages/tree/main/gpkg/mesa)
 
+==========================
+
+[termux/termux-packages（非glibc环境）](https://github.com/termux/termux-packages)
+
+-[packages/mesa](https://github.com/termux/termux-packages/tree/master/packages/mesa)
+
+-[xMeM patch（非Glibc环境）](https://github.com/xMeM/termux-packages/commit/401982b8d9eaef70669762bfff2a963341c65e52)

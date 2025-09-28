@@ -1,0 +1,241 @@
+diff -urN mesa25.2.3/src/freedreno/drm/freedreno_device.c b/src/freedreno/drm/freedreno_device.c
+--- mesa25.2.3/src/freedreno/drm/freedreno_device.c	2025-09-28 19:35:03.759312840 +0800
++++ b/src/freedreno/drm/freedreno_device.c	2025-09-28 23:56:05.854864806 +0800
+@@ -23,6 +23,9 @@
+ #ifdef HAVE_FREEDRENO_VIRTIO
+ struct fd_device *virtio_device_new(int fd, drmVersionPtr version);
+ #endif
++#ifdef HAVE_FREEDRENO_KGSL
++struct fd_device *kgsl_device_new(int fd);
++#endif
+ 
+ uint64_t os_page_size = 4096;
+ 
+@@ -30,17 +33,18 @@
+ fd_device_new(int fd)
+ {
+    struct fd_device *dev = NULL;
+-   drmVersionPtr version;
++   drmVersionPtr version = NULL;
+    bool use_heap = false;
++   bool support_use_heap = true;
+ 
+    os_get_page_size(&os_page_size);
+ 
++#ifdef HAVE_LIBDRM
+    /* figure out if we are kgsl or msm drm driver: */
+    version = drmGetVersion(fd);
+-   if (!version) {
+-      ERROR_MSG("cannot get version: %s", strerror(errno));
+-      return NULL;
+-   }
++   if (!version)
++      DEBUG_MSG("cannot get version: %s", strerror(errno));
++#endif
+ 
+ #ifdef HAVE_FREEDRENO_VIRTIO
+    if (debug_get_bool_option("FD_FORCE_VTEST", false)) {
+@@ -48,7 +52,7 @@
+       dev = virtio_device_new(-1, version);
+    } else
+ #endif
+-   if (!strcmp(version->name, "msm")) {
++   if (version && !strcmp(version->name, "msm")) {
+       DEBUG_MSG("msm DRM device");
+       if (version->version_major != 1) {
+          ERROR_MSG("unsupported version: %u.%u.%u", version->version_major,
+@@ -58,7 +62,7 @@
+ 
+       dev = msm_device_new(fd, version);
+ #ifdef HAVE_FREEDRENO_VIRTIO
+-   } else if (!strcmp(version->name, "virtio_gpu")) {
++   } else if (version && !strcmp(version->name, "virtio_gpu")) {
+       DEBUG_MSG("virtio_gpu DRM device");
+       dev = virtio_device_new(fd, version);
+       /* Only devices that support a hypervisor are a6xx+, so avoid the
+@@ -66,10 +70,14 @@
+        */
+       use_heap = true;
+ #endif
+-#if HAVE_FREEDRENO_KGSL
+-   } else if (!strcmp(version->name, "kgsl")) {
+-      DEBUG_MSG("kgsl DRM device");
++#ifdef HAVE_FREEDRENO_KGSL
++   } else {
++      /* If drm driver not detected assume this is KGSL */
+       dev = kgsl_device_new(fd);
++      /* Userspace fences are not supported with KGSL */
++      support_use_heap = false;
++      if (dev)
++         goto out;
+ #endif
+    }
+ 
+@@ -117,7 +125,7 @@
+       fd_pipe_del(pipe);
+    }
+ 
+-   if (use_heap) {
++   if (support_use_heap && use_heap) {
+       dev->ring_heap = fd_bo_heap_new(dev, RING_FLAGS);
+       dev->default_heap = fd_bo_heap_new(dev, 0);
+    }
+@@ -236,6 +244,12 @@
+    return debug_get_option_libgl();
+ }
+ 
++uint32_t
++fd_get_features(struct fd_device *dev)
++{
++    return dev->features;
++}
++
+ bool
+ fd_has_syncobj(struct fd_device *dev)
+ {
+diff -urN mesa25.2.3/src/freedreno/drm/freedreno_drmif.h b/src/freedreno/drm/freedreno_drmif.h
+--- mesa25.2.3/src/freedreno/drm/freedreno_drmif.h	2025-09-28 19:35:03.760312854 +0800
++++ b/src/freedreno/drm/freedreno_drmif.h	2025-09-28 23:58:07.385506308 +0800
+@@ -50,6 +50,13 @@
+    FD_UCHE_TRAP_BASE,
+ };
+ 
++enum fd_reset_status {
++   FD_RESET_NO_ERROR,
++   FD_RESET_GUILTY,
++   FD_RESET_INNOCENT,
++   FD_RESET_UNKNOWN,
++};
++
+ /**
+  * Helper for fence/seqno comparisions which deals properly with rollover.
+  * Returns true if fence 'a' is before fence 'b'
+@@ -180,6 +187,12 @@
+ };
+ enum fd_version fd_device_version(struct fd_device *dev);
+ 
++enum fd_features {
++    FD_FEATURE_DIRECT_RESET = 1,
++    FD_FEATURE_IMPORT_DMABUF = 2,
++};
++
++uint32_t fd_get_features(struct fd_device *dev);
+ bool fd_has_syncobj(struct fd_device *dev);
+ 
+ /* pipe functions:
+@@ -201,6 +214,7 @@
+ /* timeout in nanosec */
+ int fd_pipe_wait_timeout(struct fd_pipe *pipe, const struct fd_fence *fence,
+                          uint64_t timeout);
++int fd_pipe_get_reset_status(struct fd_pipe *pipe, enum fd_reset_status *status);
+ 
+ /* buffer-object functions:
+  */
+diff -urN mesa25.2.3/src/freedreno/drm/freedreno_pipe.c b/src/freedreno/drm/freedreno_pipe.c
+--- mesa25.2.3/src/freedreno/drm/freedreno_pipe.c	2025-09-28 19:35:03.761312867 +0800
++++ b/src/freedreno/drm/freedreno_pipe.c	2025-09-28 23:58:59.878215320 +0800
+@@ -215,6 +215,12 @@
+    return fence;
+ }
+ 
++int
++fd_pipe_get_reset_status(struct fd_pipe *pipe, enum fd_reset_status *status)
++{
++    return pipe->funcs->reset_status(pipe, status);
++}
++
+ struct fd_fence *
+ fd_fence_new(struct fd_pipe *pipe, bool use_fence_fd)
+ {
+diff -urN mesa25.2.3/src/freedreno/drm/freedreno_priv.h b/src/freedreno/drm/freedreno_priv.h
+--- mesa25.2.3/src/freedreno/drm/freedreno_priv.h	2025-09-28 19:35:03.761312867 +0800
++++ b/src/freedreno/drm/freedreno_priv.h	2025-09-29 00:00:04.364087636 +0800
+@@ -191,6 +191,7 @@
+    int fd;
+    enum fd_version version;
+    int32_t refcnt;
++   uint32_t features;
+ 
+    /* tables to keep track of bo's, to avoid "evil-twin" fd_bo objects:
+     *
+@@ -294,6 +295,7 @@
+    struct fd_ringbuffer *(*ringbuffer_new_object)(struct fd_pipe *pipe,
+                                                   uint32_t size);
+    struct fd_submit *(*submit_new)(struct fd_pipe *pipe);
++   int (*reset_status)(struct fd_pipe *pipe, enum fd_reset_status *status);
+ 
+    /**
+     * Flush any deferred submits (if deferred submits are supported by
+diff -urN mesa25.2.3/src/gallium/drivers/freedreno/freedreno_context.c b/src/gallium/drivers/freedreno/freedreno_context.c
+--- mesa25.2.3/src/gallium/drivers/freedreno/freedreno_context.c	2025-09-28 19:35:04.762326349 +0800
++++ b/src/gallium/drivers/freedreno/freedreno_context.c	2025-09-29 00:03:28.152850517 +0800
+@@ -501,6 +501,22 @@
+    return status;
+ }
+ 
++static enum pipe_reset_status
++fd_get_device_reset_status_direct(struct pipe_context *pctx)
++{
++   struct fd_context *ctx = fd_context(pctx);
++   enum pipe_reset_status status_list[] = {
++      [FD_RESET_NO_ERROR] = PIPE_NO_RESET,
++      [FD_RESET_GUILTY] = PIPE_GUILTY_CONTEXT_RESET,
++      [FD_RESET_INNOCENT] = PIPE_INNOCENT_CONTEXT_RESET,
++      [FD_RESET_UNKNOWN] = PIPE_UNKNOWN_CONTEXT_RESET,
++   };
++   enum fd_reset_status fd_status;
++   ASSERTED int ret = fd_pipe_get_reset_status(ctx->pipe, &fd_status);
++   assert(!ret);
++   return status_list[fd_status];
++}
++
+ static void
+ fd_trace_record_ts(struct u_trace *ut, void *cs, void *timestamps,
+                    uint64_t offset_B, uint32_t flags)
+@@ -666,11 +682,6 @@
+ 
+    ctx->in_fence_fd = -1;
+ 
+-   if (fd_device_version(screen->dev) >= FD_VERSION_ROBUSTNESS) {
+-      ctx->context_reset_count = fd_get_reset_count(ctx, true);
+-      ctx->global_reset_count = fd_get_reset_count(ctx, false);
+-   }
+-
+    simple_mtx_init(&ctx->gmem_lock, mtx_plain);
+ 
+    /* need some sane default in case gallium frontends don't
+@@ -685,13 +696,20 @@
+    pctx->flush = fd_context_flush;
+    pctx->emit_string_marker = fd_emit_string_marker;
+    pctx->set_debug_callback = fd_set_debug_callback;
+-   pctx->get_device_reset_status = fd_get_device_reset_status;
+    pctx->create_fence_fd = fd_create_pipe_fence_fd;
+    pctx->fence_server_sync = fd_pipe_fence_server_sync;
+    pctx->fence_server_signal = fd_pipe_fence_server_signal;
+    pctx->texture_barrier = fd_texture_barrier;
+    pctx->memory_barrier = fd_memory_barrier;
+ 
++   if (fd_get_features(screen->dev) & FD_FEATURE_DIRECT_RESET) {
++      pctx->get_device_reset_status = fd_get_device_reset_status_direct;
++   } else if(fd_device_version(screen->dev) >= FD_VERSION_ROBUSTNESS) {
++      ctx->context_reset_count = fd_get_reset_count(ctx, true);
++      ctx->global_reset_count = fd_get_reset_count(ctx, false);
++      pctx->get_device_reset_status = fd_get_device_reset_status;
++   }
++
+    pctx->stream_uploader = u_upload_create_default(pctx);
+    if (!pctx->stream_uploader)
+       goto fail;
+diff -urN mesa25.2.3/src/gallium/drivers/freedreno/freedreno_screen.c b/src/gallium/drivers/freedreno/freedreno_screen.c
+--- mesa25.2.3/src/gallium/drivers/freedreno/freedreno_screen.c	2025-09-28 19:35:04.770326457 +0800
++++ b/src/gallium/drivers/freedreno/freedreno_screen.c	2025-09-29 00:14:03.340462145 +0800
+@@ -655,6 +655,9 @@
+    caps->shader_stencil_export = is_a6xx(screen);
+    caps->two_sided_color = false;
+    caps->throttle = screen->driconf.enable_throttling;
++   /* test deepseek case to caps */
++   caps->dmabuf_import = (fd_get_features(screen->dev) & FD_FEATURE_IMPORT_DMABUF) ? 
++                         DRM_PRIME_CAP_IMPORT : 0;
+ 
+    caps->min_line_width =
+    caps->min_line_width_aa =

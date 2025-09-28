@@ -1,0 +1,12 @@
+diff -urN mesa25.2.3/src/gallium/drivers/freedreno/freedreno_screen.c b/src/gallium/drivers/freedreno/freedreno_screen.c
+--- mesa25.2.3/src/gallium/drivers/freedreno/freedreno_screen.c	2025-09-28 19:35:04.770326457 +0800
++++ b/src/gallium/drivers/freedreno/freedreno_screen.c	2025-09-28 19:41:57.892879441 +0800
+@@ -633,7 +633,7 @@
+    caps->query_timestamp =
+    caps->query_time_elapsed =
+       /* only a4xx, requires new enough kernel so we know max_freq: */
+-      (screen->max_freq > 0) && (is_a4xx(screen) || is_a5xx(screen) || is_a6xx(screen));
++      (is_a4xx(screen) || is_a5xx(screen) || is_a6xx(screen));
+    caps->timer_resolution = ticks_to_ns(1);
+    caps->query_buffer_object =
+    caps->query_so_overflow =
