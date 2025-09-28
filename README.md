@@ -4,7 +4,7 @@
 
 由于glibc仓库的驱动是老版本且长时间没有进行更新，部分补丁可能会在后续版本逐渐失效
 
-### 先通过```patch --diy-run -p1 < path/to/XXX.patch``` 试运行一遍！
+### 先通过```patch --dry-run -p1 < path/to/XXX.patch``` 试运行一遍！
 
 
 
