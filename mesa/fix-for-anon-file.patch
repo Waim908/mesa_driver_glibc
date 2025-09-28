@@ -7,7 +7,7 @@ Fallback to `@TERMUX_PREFIX_CLASSICAL@/tmp` if env `XDG_RUNTIME_DIR` is not set.
  
     path = getenv("XDG_RUNTIME_DIR");
 +   if (!path) {
-+      path = "@TERMUX_PREFIX_CLASSICAL@/tmp";
++      path = "/data/data/com.termux/files/usr/tmp";
 +   }
     if (!path) {
        errno = ENOENT;
