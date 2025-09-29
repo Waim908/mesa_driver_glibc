@@ -1,9 +1,4 @@
-mkdir /data
-mkdir /data/data/
-mkdir /data/data/com.termux
-mkdir /data/data/com.termux/files/
-mkdir /data/data/com.termux/files/usr
-mkdir /data/data/com.termux/files/usr/glibc
+
 patchelf_glibc () {
     GLIBC_PREFIX=/data/data/com.termux/files/usr/glibc
 
