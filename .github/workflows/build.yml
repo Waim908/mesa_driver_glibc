@@ -1,0 +1,16 @@
+name: build mesa driver
+
+on:
+  workflow_dispatch:
+
+jobs:
+  ubuntu:
+    runs-on: ubuntu-22.02-arm
+    steps:
+      - name: get patch
+        run: |
+          pwd
+          apt install tree -y
+          tree
+
+
