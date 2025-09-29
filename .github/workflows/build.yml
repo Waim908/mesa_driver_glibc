@@ -10,6 +10,7 @@ jobs:
       - name: get resources and apply patch
         run: |
           sudo bash -c 'cp /etc/apt/sources.list /etc/apt/sources.list.bak && echo -e "deb https://mirrors.aliyun.com/ubuntu-ports/ jammy main restricted universe multiverse\ndeb-src https://mirrors.aliyun.com/ubuntu-ports/ jammy main restricted universe multiverse\ndeb https://mirrors.aliyun.com/ubuntu-ports/ jammy-security main restricted universe multiverse\ndeb-src https://mirrors.aliyun.com/ubuntu-ports/ jammy-security main restricted universe multiverse\ndeb https://mirrors.aliyun.com/ubuntu-ports/ jammy-updates main restricted universe multiverse\ndeb-src https://mirrors.aliyun.com/ubuntu-ports/ jammy-updates main restricted universe multiverse\n# deb https://mirrors.aliyun.com/ubuntu-ports/ jammy-proposed main restricted universe multiverse\n# deb-src https://mirrors.aliyun.com/ubuntu-ports/ jammy-proposed main restricted universe multiverse\ndeb https://mirrors.aliyun.com/ubuntu-ports/ jammy-backports main restricted universe multiverse\ndeb-src https://mirrors.aliyun.com/ubuntu-ports/ jammy-backports main restricted universe multiverse" > /etc/apt/sources.list'
+          sudo apt update -y
           sudo apt build-dep mesa -y
           sudo mkdir /data
           chmod 777 /data
