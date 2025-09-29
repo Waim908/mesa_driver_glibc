@@ -23,8 +23,7 @@ jobs:
           git clone -b mesa-25.1.0 https://gitlab.freedesktop.org/mesa/mesa.git mesa
           . patch/patchelf.sh
           wget -O /tmp/glibc.tar.xz https://github.com/Waim908/lite-termux-glibc/releases/download/nodownload/Lite-glibc-2.41-1.tar.xz 
-          tar -xf /tmp/glibc.tar.xz -C /data/data/com.termux/usr/
-          sudo sed -i '/deb-src/s/^# //' /etc/apt/sources.list && apt update
+          tar -xf /tmp/glibc.tar.xz -C /data/data/com.termux/files/usr/
           sudo apt install patchelf ninja meson cmake -y
           cd mesa
           patch_dir=v25
