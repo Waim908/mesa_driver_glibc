@@ -10,6 +10,6 @@ jobs:
       - name: get patch
         run: |
           pwd
-          ls
+          echo "$(ls)"
 
 
