@@ -7,9 +7,36 @@ jobs:
   ubuntu:
     runs-on: ubuntu-22.04-arm
     steps:
-      - name: get patch
+      - name: get resources and apply patch
         run: |
-          pwd
-          echo "$(ls)"
+          git clone https://github.com/Waim908/mesa_driver_glibc.git patch
+          git clone -b mesa-25.1.0 https://gitlab.freedesktop.org/mesa/mesa.git mesa
+          . patch/patchelf.sh
+          wget -O /tmp/glibc.tar.xz https://github.com/Waim908/lite-termux-glibc/releases/download/nodownload/Lite-glibc-2.41-1.tar.xz 
+          tar -xf /tmp/glibc/tar.xz -C /data/data/com.termux/usr/
+          sudo sed -i '/deb-src/s/^# //' /etc/apt/sources.list && apt update
+          sudo apt install patchelf ninja meson cmake
+          sudo apt build-dep mesa
+          cd mesa
+          patch_dir=v25
+          for patch in ../patch/$patch_dir/*.patch; do
+            if ! patch -p1 < ../$patch_dir/$patch ; then
+              echo "$patch 应用失败!"
+              exit 1
+              break
+            else
+              echo "$patch :Done"
+            fi
+          done
+      - name: meson configure
+        run: |
+          meson setup builddir -Dprefix=/tmp/build -Dbuildtype=release -Dplatforms=x11,wayland -Dgallium-drivers=freedreno,virgl,zink,panfrost,llvmpipe -Dvulkan-drivers=freedreno,panfrost,swrast,virtio -Degl=enabled -Dgles1=disabled -Dgles2=enabled -Dglvnd=enabled -Dglx=dri -Dllvm=enabled -Dgallium-extra-hud=true -Dgallium-va=enabled -Dgallium-vdpau=enabled -Dgbm=enabled -Dvulkan-layers=device-select,overlay -Dfreedreno-kmds=kgsl -Dlibunwind=disabled -Dvalgrind=disabled -Dmicrosoft-clc=disabled
+      - name: meson compile & install
+        run: |
+          meson compile -C builddir && meson install -C builddir
+      
+          
+
+
 
 
