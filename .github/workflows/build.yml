@@ -10,7 +10,6 @@ jobs:
       - name: get patch
         run: |
           pwd
-          sudo apt install tree -y
-          tree
+          ls
 
 
