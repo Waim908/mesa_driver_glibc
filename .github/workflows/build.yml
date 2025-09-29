@@ -28,7 +28,7 @@ jobs:
           cd mesa
           patch_dir=v25
           for patch in ../patch/$patch_dir/*.patch; do
-            if ! patch -p1 < ../$patch_dir/$patch ; then
+            if ! patch -p1 < ../patch/$patch_dir/$patch ; then
               echo "$patch 应用失败!"
               exit 1
               break
