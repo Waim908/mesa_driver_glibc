@@ -13,7 +13,7 @@ jobs:
           sudo apt update -y
           sudo apt build-dep mesa -y
           sudo mkdir /data
-          chmod 777 /data
+          sudo chmod 777 /data
           mkdir /data/data/
           mkdir /data/data/com.termux
           mkdir /data/data/com.termux/files/
