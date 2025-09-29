@@ -24,8 +24,7 @@ jobs:
           . patch/patchelf.sh
           wget -O /tmp/glibc.tar.xz https://github.com/Waim908/lite-termux-glibc/releases/download/nodownload/Lite-glibc-2.41-1.tar.xz 
           tar -xf /tmp/glibc.tar.xz -C /data/data/com.termux/files/usr/
-          sudo apt update
-          sudo apt install patchelf ninja meson cmake -y
+          sudo apt install patchelf ninja-build meson cmake -y
           cd mesa
           patch_dir=v25
           for patch in ../patch/$patch_dir/*.patch; do
