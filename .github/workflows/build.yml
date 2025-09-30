@@ -28,12 +28,12 @@ jobs:
           sudo apt install patchelf ninja-build meson cmake -y
           cd /tmp/mesa
           for i in /tmp/patch/v25/*.patch; do
-            if ! patch -p1 < /tmp/patch/v25/"$i" ; then
-              echo "$patch 应用失败!"
+            if ! patch -p1 < "$i" ; then
+              echo "$i 应用失败!"
               exit 1
               break
             else
-              echo "$patch :Done"
+              echo "$i :Done"
             fi
           done
       - name: meson configure
