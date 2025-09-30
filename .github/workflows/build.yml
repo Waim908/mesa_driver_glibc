@@ -11,6 +11,10 @@ jobs:
         run: |
           echo -e 'deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ noble main restricted universe multiverse\ndeb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ noble main restricted universe multiverse\ndeb https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ noble-updates main restricted universe multiverse\ndeb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ noble-updates main restricted universe multiverse\ndeb https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ noble-backports main restricted universe multiverse\ndeb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ noble-backports main restricted universe multiverse\ndeb http://ports.ubuntu.com/ubuntu-ports/ noble-security main restricted universe multiverse\ndeb-src http://ports.ubuntu.com/ubuntu-ports/ noble-security main restricted universe multiverse' | sudo tee /etc/apt/sources.list
           sudo apt update -y
+          sudo apt install patchelf ninja-build cmake python3-pip -y         
+          pip install mako --yes
+          pip install PyYaml --yes
+          pip install meson --yes
           sudo apt build-dep mesa -y
           sudo mkdir /data
           sudo chmod 777 /data
@@ -25,7 +29,6 @@ jobs:
           . patch/patchelf.sh
           wget -O /tmp/glibc.tar.xz https://github.com/Waim908/lite-termux-glibc/releases/download/nodownload/Lite-glibc-2.41-1.tar.xz 
           tar -xf /tmp/glibc.tar.xz -C /data/data/com.termux/files/usr/
-          sudo apt install patchelf ninja-build meson cmake -y
           cd /tmp/mesa
           for i in /tmp/patch/v25/*.patch; do
             echo "应用补丁：$i"
