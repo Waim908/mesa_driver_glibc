@@ -9,7 +9,14 @@ jobs:
     steps:
       - name: get resources and apply patch
         run: |
-          sudo bash -c 'cp /etc/apt/sources.list /etc/apt/sources.list.bak && echo -e "deb https://mirrors.aliyun.com/ubuntu-ports/ jammy main restricted universe multiverse\ndeb-src https://mirrors.aliyun.com/ubuntu-ports/ jammy main restricted universe multiverse\ndeb https://mirrors.aliyun.com/ubuntu-ports/ jammy-security main restricted universe multiverse\ndeb-src https://mirrors.aliyun.com/ubuntu-ports/ jammy-security main restricted universe multiverse\ndeb https://mirrors.aliyun.com/ubuntu-ports/ jammy-updates main restricted universe multiverse\ndeb-src https://mirrors.aliyun.com/ubuntu-ports/ jammy-updates main restricted universe multiverse\n# deb https://mirrors.aliyun.com/ubuntu-ports/ jammy-proposed main restricted universe multiverse\n# deb-src https://mirrors.aliyun.com/ubuntu-ports/ jammy-proposed main restricted universe multiverse\ndeb https://mirrors.aliyun.com/ubuntu-ports/ jammy-backports main restricted universe multiverse\ndeb-src https://mirrors.aliyun.com/ubuntu-ports/ jammy-backports main restricted universe multiverse" > /etc/apt/sources.list'
+          sudo cp /etc/apt/sources.list /etc/apt/sources.list.bak && echo 'deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ noble main restricted universe multiverse
+deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ noble main restricted universe multiverse
+deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ noble-updates main restricted universe multiverse
+deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ noble-updates main restricted universe multiverse
+deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ noble-backports main restricted universe multiverse
+deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ noble-backports main restricted universe multiverse
+deb http://ports.ubuntu.com/ubuntu-ports/ noble-security main restricted universe multiverse
+deb-src http://ports.ubuntu.com/ubuntu-ports/ noble-security main restricted universe multiverse' | sudo tee /etc/apt/sources.list
           sudo apt update -y
           sudo apt build-dep mesa -y
           sudo mkdir /data
