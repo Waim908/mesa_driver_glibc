@@ -27,9 +27,8 @@ jobs:
           tar -xf /tmp/glibc.tar.xz -C /data/data/com.termux/files/usr/
           sudo apt install patchelf ninja-build meson cmake -y
           cd /tmp/mesa
-          patch_dir=v25
-          for patch in /tmp/patch/$patch_dir/*.patch; do
-            if ! patch -p1 < /tmp/patch/$patch_dir/$patch ; then
+          for i in /tmp/patch/v25/*.patch; do
+            if ! patch -p1 < /tmp/patch/v25/"$i" ; then
               echo "$patch 应用失败!"
               exit 1
               break
