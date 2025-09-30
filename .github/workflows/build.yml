@@ -12,9 +12,9 @@ jobs:
           echo -e 'deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ noble main restricted universe multiverse\ndeb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ noble main restricted universe multiverse\ndeb https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ noble-updates main restricted universe multiverse\ndeb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ noble-updates main restricted universe multiverse\ndeb https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ noble-backports main restricted universe multiverse\ndeb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ noble-backports main restricted universe multiverse\ndeb http://ports.ubuntu.com/ubuntu-ports/ noble-security main restricted universe multiverse\ndeb-src http://ports.ubuntu.com/ubuntu-ports/ noble-security main restricted universe multiverse' | sudo tee /etc/apt/sources.list
           sudo apt update -y
           sudo apt install patchelf ninja-build cmake python3-pip -y         
-          pip install mako --yes
-          pip install PyYaml --yes
-          pip install meson --yes
+          pip install mako --break-system-package
+          pip install PyYaml --break-system-package
+          pip install meson --break-system-package
           sudo apt build-dep mesa -y
           sudo mkdir /data
           sudo chmod 777 /data
