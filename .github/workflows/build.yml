@@ -28,7 +28,7 @@ jobs:
           sudo apt install patchelf ninja-build meson cmake -y
           cd /tmp/mesa
           for i in /tmp/patch/v25/*.patch; do
-            echo "应用补丁：$1"
+            echo "应用补丁：$i"
             if ! patch -p1 < "$i" ; then
               echo "$i 应用失败!"
               exit 1
@@ -39,9 +39,11 @@ jobs:
           done
       - name: meson configure
         run: |
+          cd /tmp/mesa/
           meson setup builddir -Dprefix=/tmp/glibc -Dbuildtype=release -Dplatforms=x11,wayland -Dgallium-drivers=freedreno,virgl,zink,panfrost,llvmpipe -Dvulkan-drivers=freedreno,panfrost,swrast,virtio -Degl=enabled -Dgles1=disabled -Dgles2=enabled -Dglvnd=enabled -Dglx=dri -Dllvm=enabled -Dgallium-extra-hud=true -Dgallium-va=enabled -Dgallium-vdpau=enabled -Dgbm=enabled -Dvulkan-layers=device-select,overlay -Dfreedreno-kmds=kgsl -Dlibunwind=disabled -Dvalgrind=disabled -Dmicrosoft-clc=disabled
       - name: meson compile & install
         run: |
+          cd /tmp/mesa
           meson compile -C builddir && meson install -C builddir
           cd /tmp && cd glibc && patchelf_glibc 
           tar -I 'xz -T$(nproc)' -cvf /tmp/mesa-25.1.0.tar.xz glibc/
