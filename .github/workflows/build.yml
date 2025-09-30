@@ -21,7 +21,7 @@ jobs:
           mkdir /data/data/com.termux/files/usr/glibc
           cd /tmp
           git clone https://github.com/Waim908/mesa_driver_glibc.git patch
-          git clone -b mesa-25.2.0 https://gitlab.freedesktop.org/mesa/mesa.git mesa
+          git clone -b mesa-25.2.3 https://gitlab.freedesktop.org/mesa/mesa.git mesa
           . patch/patchelf.sh
           wget -O /tmp/glibc.tar.xz https://github.com/Waim908/lite-termux-glibc/releases/download/nodownload/Lite-glibc-2.41-1.tar.xz 
           tar -xf /tmp/glibc.tar.xz -C /data/data/com.termux/files/usr/
@@ -48,12 +48,12 @@ jobs:
       - name: package and release
         uses: softprops/action-gh-release@v2
         with:
-          name: mesa-25.2.0
+          name: mesa-25.2.3
           draft: false
           prerelease: false
-          tag_name: mesa-25.2.0
+          tag_name: mesa-25.2.3
           body: panfrost turnip llvmpipe virgl virtio
           files: |
-            /tmp/mesa-25.2.0.tar.xz
+            /tmp/mesa-25.2.3.tar.xz
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
