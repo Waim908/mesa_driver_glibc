@@ -8,6 +8,10 @@
 
 # v25版本
 
+# kgsl 0011号补丁疑似失效，构建时存在无法避免的语法错误 <= 25.2.3
+
+# v25/wsi补丁无法应用在25.1
+
 ```bash
 meson setup builddir \
 -Dprefix=~/build \
@@ -28,11 +32,15 @@ meson setup builddir \
 -Dgallium-vdpau=enabled \
 -Dgbm=enabled \
 -Dvulkan-layers=device-select,overlay \
--Dfreedreno-kmds=kgsl \
+-Dfreedreno-kmds=kgsl,msm \
 -Dlibunwind=disabled \
 -Dvalgrind=disabled \
 -Dmicrosoft-clc=disabled
 ```
+
+# virglrenderer
+
+
 
 #### 补丁取代
 

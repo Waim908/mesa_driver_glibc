@@ -25,41 +25,40 @@ jobs:
           mkdir /data/data/com.termux/files/usr/glibc
           cd /tmp
           git clone https://github.com/Waim908/mesa_driver_glibc.git patch
-          git clone -b mesa-25.2.3 https://gitlab.freedesktop.org/mesa/mesa.git mesa
+          git clone -b mesa-25.1.0 https://gitlab.freedesktop.org/mesa/mesa.git mesa
           . patch/patchelf.sh
           wget -O /tmp/glibc.tar.xz https://github.com/Waim908/lite-termux-glibc/releases/download/nodownload/Lite-glibc-2.41-1.tar.xz 
           tar -xf /tmp/glibc.tar.xz -C /data/data/com.termux/files/usr/
           cd /tmp/mesa
-          for i in /tmp/patch/v25/*.patch; do
-            echo "应用补丁：$i"
-            if ! patch -p1 < "$i" ; then
-              echo "$i 应用失败!"
-              exit 1
-              break
-            else
-              echo "$i: Done"
-            fi
-          done
+          echo "应用virgl路径修复补丁"
+          if ! patch -p1 < /tmp/patch/mesa/virgl-socket-path.patch; then
+            echo "失败"
+            exit 1
+          fi
+          echo "应用fix-for-anon-file.patch"
+          if ! patch -p1 < /tmp/patch/mesa/fix-for-anon-file.patch; then
+            echo "失败"
+            exit 1
+          fi
       - name: meson configure
         run: |
           cd /tmp/mesa/
-          meson setup builddir -Dprefix=/tmp/glibc -Dbuildtype=release -Dplatforms=x11,wayland -Dgallium-drivers=freedreno,virgl,zink,panfrost,llvmpipe -Dvulkan-drivers=freedreno,panfrost,swrast,virtio -Degl=enabled -Dgles1=disabled -Dgles2=enabled -Dglvnd=enabled -Dglx=dri -Dllvm=enabled -Dgallium-extra-hud=true -Dgallium-va=enabled -Dgallium-vdpau=enabled -Dgbm=enabled -Dvulkan-layers=device-select,overlay -Dfreedreno-kmds=kgsl,msm -Dlibunwind=disabled -Dvalgrind=disabled -Dmicrosoft-clc=disabled
+          meson setup builddir -Dprefix=/tmp/glibc -Dbuildtype=release -Dplatforms=x11,wayland -Dgallium-drivers=freedreno,virgl,zink,panfrost,llvmpipe -Dvulkan-drivers=freedreno,panfrost,swrast,virtio -Degl=enabled -Dgles1=disabled -Dgles2=enabled -Dglvnd=enabled -Dglx=dri -Dllvm=enabled -Dgallium-extra-hud=true -Dgallium-va=enabled -Dgallium-vdpau=enabled -Dgbm=enabled -Dvulkan-layers=device-select,overlay -Dfreedreno-kmds=kgsl -Dlibunwind=disabled -Dvalgrind=disabled -Dmicrosoft-clc=disabled
       - name: meson compile & install
         run: |
           cd /tmp/mesa
-          export CPPFLAGS+=" -D__USE_GNU"
           meson compile -C builddir && meson install -C builddir
           cd /tmp && cd glibc && patchelf_glibc 
-          tar -I 'xz -T$(nproc)' -cvf /tmp/mesa-25.2.3.tar.xz glibc/
+          tar -I 'xz -T$(nproc)' -cvf /tmp/mesa-25.1.0.tar.xz glibc/
       - name: package and release
         uses: softprops/action-gh-release@v2
         with:
           name: test
           draft: false
           prerelease: false
-          tag_name: mesa-25.2.3
+          tag_name: mesa-25.1.0
           body: panfrost turnip llvmpipe virgl virtio
           files: |
-            /tmp/mesa-25.2.3.tar.xz
+            /tmp/mesa-25.1.0.tar.xz
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
