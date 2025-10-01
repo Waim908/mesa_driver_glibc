@@ -13,7 +13,7 @@ jobs:
           sudo apt update -y
           sudo apt install patchelf ninja-build cmake python3-pip -y         
           pip install mako --break-system-package
-          pip install PyYaml --break-system-package
+          pip install PyYAML --break-system-package
           pip install meson --break-system-package
           sudo apt build-dep mesa -y
           sudo mkdir /data
@@ -25,7 +25,7 @@ jobs:
           mkdir /data/data/com.termux/files/usr/glibc
           cd /tmp
           git clone https://github.com/Waim908/mesa_driver_glibc.git patch
-          git clone -b mesa-25.2.3 https://gitlab.freedesktop.org/mesa/mesa.git mesa
+          git clone -b mesa-25.1.0 https://gitlab.freedesktop.org/mesa/mesa.git mesa
           . patch/patchelf.sh
           wget -O /tmp/glibc.tar.xz https://github.com/Waim908/lite-termux-glibc/releases/download/nodownload/Lite-glibc-2.41-1.tar.xz 
           tar -xf /tmp/glibc.tar.xz -C /data/data/com.termux/files/usr/
@@ -53,12 +53,12 @@ jobs:
       - name: package and release
         uses: softprops/action-gh-release@v2
         with:
-          name: mesa-25.2.3
+          name: test
           draft: false
           prerelease: false
-          tag_name: mesa-25.2.3
+          tag_name: mesa-25.1.0
           body: panfrost turnip llvmpipe virgl virtio
           files: |
-            /tmp/mesa-25.2.3.tar.xz
+            /tmp/mesa-25.1.0.tar.xz
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
