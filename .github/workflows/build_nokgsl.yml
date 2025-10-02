@@ -14,6 +14,9 @@ jobs:
       - name: get resources and apply patch
         id: getRes
         run: |
+          export CFLAGS="-O3 -marh=armv8-a -mutune=generic -flto=auto"
+          export CXXFLAGS="-O3 -marh=armv8-a -mutune=generic -flto=auto"
+          export LDFLAGS="-O3 -flto=auto"
           echo "目标版本：$mesaVersion"
           echo -e 'deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ noble main restricted universe multiverse\ndeb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ noble main restricted universe multiverse\ndeb https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ noble-updates main restricted universe multiverse\ndeb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ noble-updates main restricted universe multiverse\ndeb https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ noble-backports main restricted universe multiverse\ndeb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ noble-backports main restricted universe multiverse\ndeb http://ports.ubuntu.com/ubuntu-ports/ noble-security main restricted universe multiverse\ndeb-src http://ports.ubuntu.com/ubuntu-ports/ noble-security main restricted universe multiverse' | sudo tee /etc/apt/sources.list
           sudo apt update -y
@@ -120,7 +123,7 @@ jobs:
           draft: false
           prerelease: false
           tag_name: mesa-${{ steps.getRes.outputs.mesaVer }}-virgl-${{ steps.getRes.outputs.virglVer }}
-          body: panfrost turnip llvmpipe virgl virtio virglserver=${{ steps.getRes.outputs.virglVer }}
+          body: panfrost turnip(no kgsl patch) llvmpipe virgl virtio virglserver=${{ steps.getRes.outputs.virglVer }}
           files: |
             /tmp/mesa-25.1.0.tar.xz
         env:
