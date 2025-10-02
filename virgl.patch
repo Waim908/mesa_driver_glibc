@@ -1,0 +1,24 @@
+diff -urN virglrenderer/src/mesa/util/anon_file.c b/src/mesa/util/anon_file.c
+--- virglrenderer/src/mesa/util/anon_file.c	2025-10-01 16:29:35.809062919 +0800
++++ b/src/mesa/util/anon_file.c	2025-10-01 16:58:57.986981510 +0800
+@@ -135,7 +135,7 @@
+ 
+    path = getenv("XDG_RUNTIME_DIR");
+    if (!path)
+-      path = "/tmp";
++      path = "/data/data/com.termux/files/usr/tmp";
+ 
+    if (debug_name)
+       asprintf(&name, "%s/mesa-shared-%s-XXXXXX", path, debug_name);
+diff -urN virglrenderer/vtest/vtest_protocol.h b/vtest/vtest_protocol.h
+--- virglrenderer/vtest/vtest_protocol.h	2025-10-01 16:29:35.927064588 +0800
++++ b/vtest/vtest_protocol.h	2025-10-01 17:00:20.544081111 +0800
+@@ -25,7 +25,7 @@
+ #ifndef VTEST_PROTOCOL
+ #define VTEST_PROTOCOL
+ 
+-#define VTEST_DEFAULT_SOCKET_NAME "/tmp/.virgl_test"
++#define VTEST_DEFAULT_SOCKET_NAME "/data/data/com.termux/files/usr/tmp/.virgl_test"
+ 
+ #define VTEST_PROTOCOL_VERSION 4
+ 

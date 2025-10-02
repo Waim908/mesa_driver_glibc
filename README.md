@@ -40,9 +40,11 @@ meson setup builddir \
 
 # virglrenderer
 
+```bash
+meson setup builddir -Dprefix=~/build -Dbuildtype=release -Dvenus=true -Dplatform=glx,egl
+```
 
-
-#### 补丁取代
+# 补丁取代
 
 ```mesa/wsi-termux-x11-v3.patch```=>```v25/wsi-termux-x11-fix2.patch```
 

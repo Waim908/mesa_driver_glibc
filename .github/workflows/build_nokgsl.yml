@@ -1,14 +1,20 @@
-name: build mesa driver
+name: build mesa driver and virgl (no kgsl patch)
 
 on:
   workflow_dispatch:
+
+env:
+  mesaVersion: 25.1.0
+  virglVersion: 1.2.0
 
 jobs:
   ubuntu:
     runs-on: ubuntu-24.04-arm
     steps:
       - name: get resources and apply patch
+        id: getRes
         run: |
+          echo "目标版本：$mesaVersion"
           echo -e 'deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ noble main restricted universe multiverse\ndeb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ noble main restricted universe multiverse\ndeb https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ noble-updates main restricted universe multiverse\ndeb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ noble-updates main restricted universe multiverse\ndeb https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ noble-backports main restricted universe multiverse\ndeb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ noble-backports main restricted universe multiverse\ndeb http://ports.ubuntu.com/ubuntu-ports/ noble-security main restricted universe multiverse\ndeb-src http://ports.ubuntu.com/ubuntu-ports/ noble-security main restricted universe multiverse' | sudo tee /etc/apt/sources.list
           sudo apt update -y
           sudo apt install patchelf ninja-build cmake python3-pip -y         
@@ -25,12 +31,28 @@ jobs:
           mkdir /data/data/com.termux/files/usr/glibc
           cd /tmp
           git clone https://github.com/Waim908/mesa_driver_glibc.git patch
-          git clone -b mesa-25.1.0 https://gitlab.freedesktop.org/mesa/mesa.git mesa
+          if [[ ! -z $mesaVersion ]]; then
+            git clone -b $mesaVersion https://gitlab.freedesktop.org/mesa/mesa.git mesa
+          else
+            git clone https://gitlab.freedesktop.org/mesa/mesa.git
+          fi
+          if [[ ! -z $virglVersion ]]; then
+            git clone -b $virglVersion https://gitlab.freedesktop.org/virgl/virglrenderer.git virgl
+          else
+            git clone  https://gitlab.freedesktop.org/virgl/virglrenderer.git virgl
+          fi
           . patch/patchelf.sh
           wget -O /tmp/glibc.tar.xz https://github.com/Waim908/lite-termux-glibc/releases/download/nodownload/Lite-glibc-2.41-1.tar.xz 
           tar -xf /tmp/glibc.tar.xz -C /data/data/com.termux/files/usr/
           cd /tmp/mesa
-          echo "应用virgl路径修复补丁"
+          if [[ -z $mesaVersion ]]; then
+            allHash=$(git rev-parse HEAD)
+            export mesaVersion=${$allHash:0:8}
+            echo "mesaVer=$mesaVersion" >> $GITHUB_OUTPUT
+          else
+            echo "mesaVer=$mesaVersion" >> $GITHUB_OUTPUT
+          fi
+          echo "应用virgl-socket-path.patch"
           if ! patch -p1 < /tmp/patch/mesa/virgl-socket-path.patch; then
             echo "失败"
             exit 1
@@ -40,24 +62,65 @@ jobs:
             echo "失败"
             exit 1
           fi
-      - name: meson configure
+          cd /tmp/virgl
+          if [[ -z $virglVersion ]]; then
+            allHash=$(git rev-parse HEAD)
+            export virglVersion=${$allHash:0:8}
+            echo "virglVer=$virglVersion" >> $GITHUB_OUTPUT
+          else
+            echo "virglVer=$virglVersion" >> $GITHUB_OUTPUT
+          fi          
+          if ! patch -p1 < /tmp/patch/virgl.patch; then
+            echo "virgl补丁应用失败"
+            exit 1
+          fi
+      - name: meson configure - mesa driver
         run: |
           cd /tmp/mesa/
-          meson setup builddir -Dprefix=/tmp/glibc -Dbuildtype=release -Dplatforms=x11,wayland -Dgallium-drivers=freedreno,virgl,zink,panfrost,llvmpipe -Dvulkan-drivers=freedreno,panfrost,swrast,virtio -Degl=enabled -Dgles1=disabled -Dgles2=enabled -Dglvnd=enabled -Dglx=dri -Dllvm=enabled -Dgallium-extra-hud=true -Dgallium-va=enabled -Dgallium-vdpau=enabled -Dgbm=enabled -Dvulkan-layers=device-select,overlay -Dfreedreno-kmds=kgsl -Dlibunwind=disabled -Dvalgrind=disabled -Dmicrosoft-clc=disabled
-      - name: meson compile & install
+          if ! meson setup builddir -Dprefix=/tmp/glibc -Dbuildtype=release -Dplatforms=x11,wayland -Dgallium-drivers=freedreno,virgl,zink,panfrost,llvmpipe -Dvulkan-drivers=freedreno,panfrost,swrast,virtio -Degl=enabled -Dgles1=disabled -Dgles2=enabled -Dglvnd=enabled -Dglx=dri -Dllvm=enabled -Dgallium-extra-hud=true -Dgallium-va=enabled -Dgallium-vdpau=enabled -Dgbm=enabled -Dvulkan-layers=device-select,overlay -Dfreedreno-kmds=kgsl -Dlibunwind=disabled -Dvalgrind=disabled -Dmicrosoft-clc=disabled; then
+            echo "mesa driver构建彻底失败！"
+            exit 1
+          fi
+      - name: meson compile & install - mesa driver
         run: |
           cd /tmp/mesa
-          meson compile -C builddir && meson install -C builddir
-          cd /tmp && cd glibc && patchelf_glibc 
-          tar -I 'xz -T$(nproc)' -cvf /tmp/mesa-25.1.0.tar.xz glibc/
+          if ! meson compile -C builddir; then
+            echo "mesa driver编译彻底失败！"
+            exit 1
+          else
+            meson install -C builddir
+          
+      - name: meson configure - virgl
+        run: |
+          cd /tmp/virgl
+          if ! meson setup builddir -Dprefix=/tmp/glibc -Dbuildtype=release -Dvenus=true -Dplatform=glx,egl; then
+            echo "virgl server构建彻底失败！"
+            exit 1
+          fi
+      - name: meson compile & install - virgl
+        run: |
+          cd /tmp/virgl
+          if ! meson compile -C builddir; then
+            echo "virgl server编译彻底失败！"
+            exit 1
+          else
+            meson install -C builddir
+          fi
+
+      - name: package
+        run: |
+          cd /tmp
+          cd /tmp/glibc && patchelf_glibc
+          tar -I 'xz -T$(nproc)' -cvf /tmp/mesa-$mesaVersion.tar.xz glibc/
+      
       - name: package and release
         uses: softprops/action-gh-release@v2
         with:
-          name: test
+          name: mesa-driver-${{ steps.getRes.outputs.mesaVer }}-virglserver-${{ steps.getRes.outputs.virglVer }}
           draft: false
           prerelease: false
-          tag_name: mesa-25.1.0
-          body: panfrost turnip llvmpipe virgl virtio
+          tag_name: mesa-${{ steps.getRes.outputs.mesaVer }}-virgl-${{ steps.getRes.outputs.virglVer }}
+          body: panfrost turnip llvmpipe virgl virtio virglserver=${{ steps.getRes.outputs.virglVer }}
           files: |
             /tmp/mesa-25.1.0.tar.xz
         env:
