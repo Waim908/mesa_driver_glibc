@@ -19,6 +19,7 @@ jobs:
             export CFLAGS="-O3 -marh=armv8-a -mutune=generic -flto=auto"
             export CXXFLAGS="-O3 -marh=armv8-a -mutune=generic -flto=auto"
             export LDFLAGS="-O3 -flto=auto"
+            echo "isO3=-O3" >> $GITHUB_OUT
           fi
           echo "mesa 目标版本：${mesaVersion:-latestDev}"
           echo "virgl server目标版本：$virglVersion:-latestDev"
@@ -124,12 +125,12 @@ jobs:
       - name: package and release
         uses: softprops/action-gh-release@v2
         with:
-          name: mesa-driver-${{ steps.getRes.outputs.mesaVer }}-virglserver-${{ steps.getRes.outputs.virglVer }}
+          name: mesa-driver-${{ steps.getRes.outputs.mesaVer }}-virglserver-${{ steps.getRes.outputs.virglVer }}${{ steps.getRes.outputs.isO3 }}
           draft: false
           prerelease: false
-          tag_name: mesa-${{ steps.getRes.outputs.mesaVer }}-virgl-${{ steps.getRes.outputs.virglVer }}
-          body: panfrost turnip(no kgsl patch) llvmpipe virgl virtio virglserver=${{ steps.getRes.outputs.virglVer }}
+          tag_name: mesa-${{ steps.getRes.outputs.mesaVer }}-virgl-${{ steps.getRes.outputs.virglVer }}${{ steps.getRes.outputs.isO3 }}
+          body: panfrost turnip(no kgsl patch) llvmpipe virgl virtio virglserver=${{ steps.getRes.outputs.virglVer }} isO3?=> ${{ steps.getRes.outputs.isO3 }}
           files: |
-            /tmp/mesa-${{ steps.getRes.outputs.mesaVer }}-virglserver-${{ steps.getRes.outputs.virglVer }}.tar.xz
+            /tmp/mesa-${{ steps.getRes.outputs.mesaVer }}-virgl-${{ steps.getRes.outputs.virglVer }}.tar.xz
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
