@@ -4,8 +4,9 @@ on:
   workflow_dispatch:
 
 env:
-  mesaVersion: 25.1.0
+  mesaVersion: mesa-25.1.0
   virglVersion: 1.2.0
+  enableO3: true
 
 jobs:
   ubuntu:
@@ -14,10 +15,14 @@ jobs:
       - name: get resources and apply patch
         id: getRes
         run: |
-          export CFLAGS="-O3 -marh=armv8-a -mutune=generic -flto=auto"
-          export CXXFLAGS="-O3 -marh=armv8-a -mutune=generic -flto=auto"
-          export LDFLAGS="-O3 -flto=auto"
-          echo "目标版本：$mesaVersion"
+          if [[ $enableO3 == true ]]; then
+            export CFLAGS="-O3 -marh=armv8-a -mutune=generic -flto=auto"
+            export CXXFLAGS="-O3 -marh=armv8-a -mutune=generic -flto=auto"
+            export LDFLAGS="-O3 -flto=auto"
+          fi
+          echo "mesa 目标版本：${mesaVersion:-latestDev}"
+          echo "virgl server目标版本：$virglVersion:-latestDev"
+          echo "o3是否启用：${enableO3:-false}"
           echo -e 'deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ noble main restricted universe multiverse\ndeb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ noble main restricted universe multiverse\ndeb https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ noble-updates main restricted universe multiverse\ndeb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ noble-updates main restricted universe multiverse\ndeb https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ noble-backports main restricted universe multiverse\ndeb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ noble-backports main restricted universe multiverse\ndeb http://ports.ubuntu.com/ubuntu-ports/ noble-security main restricted universe multiverse\ndeb-src http://ports.ubuntu.com/ubuntu-ports/ noble-security main restricted universe multiverse' | sudo tee /etc/apt/sources.list
           sudo apt update -y
           sudo apt install patchelf ninja-build cmake python3-pip -y         
@@ -114,7 +119,7 @@ jobs:
         run: |
           cd /tmp
           cd /tmp/glibc && patchelf_glibc
-          tar -I 'xz -T$(nproc)' -cvf /tmp/mesa-$mesaVersion.tar.xz glibc/
+          tar -I 'xz -T$(nproc)' -cvf /tmp/mesa-$mesaVersion-virgl-$virglVersion.tar.xz glibc/
       
       - name: package and release
         uses: softprops/action-gh-release@v2
@@ -125,6 +130,6 @@ jobs:
           tag_name: mesa-${{ steps.getRes.outputs.mesaVer }}-virgl-${{ steps.getRes.outputs.virglVer }}
           body: panfrost turnip(no kgsl patch) llvmpipe virgl virtio virglserver=${{ steps.getRes.outputs.virglVer }}
           files: |
-            /tmp/mesa-25.1.0.tar.xz
+            /tmp/mesa-${{ steps.getRes.outputs.mesaVer }}-virglserver-${{ steps.getRes.outputs.virglVer }}.tar.xz
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
