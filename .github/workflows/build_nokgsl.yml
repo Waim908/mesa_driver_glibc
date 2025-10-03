@@ -117,8 +117,7 @@ jobs:
 
       - name: package
         run: |
-          . /tmp/
-          patch/patchelf.sh
+          . /tmp/patch/patchelf.sh
           cd /tmp
           cd /tmp/glibc && patchelf_glibc
           cd /tmp
