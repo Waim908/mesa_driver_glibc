@@ -50,7 +50,6 @@ jobs:
           else
             git clone  https://gitlab.freedesktop.org/virgl/virglrenderer.git virgl
           fi
-          . patch/patchelf.sh
           wget -O /tmp/glibc.tar.xz https://github.com/Waim908/lite-termux-glibc/releases/download/nodownload/Lite-glibc-2.41-1.tar.xz 
           tar -xf /tmp/glibc.tar.xz -C /data/data/com.termux/files/usr/
           cd /tmp/mesa
@@ -118,6 +117,7 @@ jobs:
 
       - name: package
         run: |
+          . /tmp/patch/patchelf.sh
           cd /tmp
           cd /tmp/glibc && patchelf_glibc
           tar -I 'xz -T$(nproc)' -cvf /tmp/mesa-$mesaVersion-virgl-$virglVersion.tar.xz glibc/
