@@ -133,6 +133,6 @@ jobs:
           tag_name: mesa-${{ steps.getRes.outputs.mesaVer }}-virgl-${{ steps.getRes.outputs.virglVer }}
           body: panfrost turnip(no kgsl patch) llvmpipe virgl virtio virglserver=${{ steps.getRes.outputs.virglVer }}
           files: |
-            /tmp/mesa-${{ steps.getRes.outputs.mesaVer }}-virgl-${{ steps.getRes.outputs.virglVer }}-${{ steps.getRes.outputs.virglVer }}.tar.xz
+            /tmp/mesa-${{ steps.getRes.outputs.mesaVer }}-virgl-${{ steps.getRes.outputs.virglVer }}.tar.xz
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
