@@ -101,7 +101,7 @@ jobs:
       - name: meson configure - virgl
         run: |
           cd /tmp/virgl
-          if ! meson setup builddir -Dprefix=/tmp/glibc -Dbuildtype=release -Dvenus=true -Dplatform=glx,egl; then
+          if ! meson setup builddir -Dprefix=/tmp/glibc -Dbuildtype=release -Dvenus=true -Dplatforms=glx,egl; then
             echo "virgl server构建彻底失败！"
             exit 1
           fi
