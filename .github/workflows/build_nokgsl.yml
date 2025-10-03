@@ -97,7 +97,7 @@ jobs:
             exit 1
           else
             meson install -C builddir
-          
+          fi
       - name: meson configure - virgl
         run: |
           cd /tmp/virgl
