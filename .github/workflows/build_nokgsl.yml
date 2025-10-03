@@ -26,7 +26,7 @@ jobs:
           echo "o3是否启用：${enableO3:-false}"
           echo -e 'deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ noble main restricted universe multiverse\ndeb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ noble main restricted universe multiverse\ndeb https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ noble-updates main restricted universe multiverse\ndeb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ noble-updates main restricted universe multiverse\ndeb https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ noble-backports main restricted universe multiverse\ndeb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ noble-backports main restricted universe multiverse\ndeb http://ports.ubuntu.com/ubuntu-ports/ noble-security main restricted universe multiverse\ndeb-src http://ports.ubuntu.com/ubuntu-ports/ noble-security main restricted universe multiverse' | sudo tee /etc/apt/sources.list
           sudo apt update -y
-          sudo apt install patchelf ninja-build cmake python3-pip -y         
+          sudo apt install patchelf ninja-build cmake python3-pip libepoxy-dev -y 
           pip install mako --break-system-package
           pip install PyYAML --break-system-package
           pip install meson --break-system-package
@@ -86,7 +86,7 @@ jobs:
       - name: meson configure - mesa driver
         run: |
           cd /tmp/mesa/
-          if ! meson setup builddir -Dprefix=/tmp/glibc -Dbuildtype=release -Dplatforms=x11,wayland -Dgallium-drivers=freedreno,virgl,zink,panfrost,llvmpipe -Dvulkan-drivers=freedreno,panfrost,swrast,virtio -Degl=enabled -Dgles1=disabled -Dgles2=enabled -Dglvnd=enabled -Dglx=dri -Dllvm=enabled -Dgallium-extra-hud=true -Dgallium-va=enabled -Dgallium-vdpau=enabled -Dgbm=enabled -Dvulkan-layers=device-select,overlay -Dfreedreno-kmds=kgsl -Dlibunwind=disabled -Dvalgrind=disabled -Dmicrosoft-clc=disabled; then
+          if ! meson setup builddir -Dprefix=/tmp/glibc -Dbuildtype=release -Dplatforms=x11,wayland -Dgallium-drivers=freedreno,virgl,zink,panfrost,llvmpipe -Dvulkan-drivers=freedreno,panfrost,swrast,virtio -Degl=enabled -Dgles1=disabled -Dgles2=enabled -Dglvnd=enabled -Dglx=dri -Dllvm=enabled -Dgallium-extra-hud=true -Dgallium-va=enabled -Dgallium-vdpau=enabled -Dgbm=enabled -Dvulkan-layers=device-select,overlay -Dfreedreno-kmds=kgsl,msm -Dlibunwind=disabled -Dvalgrind=disabled -Dmicrosoft-clc=disabled; then
             echo "mesa driver构建彻底失败！"
             exit 1
           fi
