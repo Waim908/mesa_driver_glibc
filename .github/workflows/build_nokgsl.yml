@@ -5,7 +5,7 @@ on:
 
 env:
   mesaVersion: mesa-25.1.0
-  virglVersion: 1.2.0
+  virglVersion: virglrenderer-1.2.0
   enableO3: true
 
 jobs:
