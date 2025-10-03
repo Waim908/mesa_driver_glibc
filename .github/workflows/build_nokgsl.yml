@@ -117,9 +117,11 @@ jobs:
 
       - name: package
         run: |
-          . /tmp/patch/patchelf.sh
+          . /tmp/
+          patch/patchelf.sh
           cd /tmp
           cd /tmp/glibc && patchelf_glibc
+          cd /tmp
           tar -I 'xz -T$(nproc)' -cvf /tmp/mesa-$mesaVersion-virgl-$virglVersion.tar.xz glibc/
       
       - name: package and release
