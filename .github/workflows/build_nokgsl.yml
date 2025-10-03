@@ -20,6 +20,7 @@ jobs:
             export CXXFLAGS="-O3 -marh=armv8-a -mutune=generic -flto=auto"
             export LDFLAGS="-O3 -flto=auto"
           fi
+          echo "CPU核心数量：$(nproc)"
           echo "mesa 目标版本：${mesaVersion:-latestDev}"
           echo "virgl server目标版本：${virglVersion:-latestDev}"
           echo "o3是否启用：${enableO3:-false}"
