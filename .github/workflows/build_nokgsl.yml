@@ -15,11 +15,6 @@ jobs:
       - name: get resources and apply patch
         id: getRes
         run: |
-          if [[ $enableO3 == true ]]; then
-            export CFLAGS="-O3 -marh=armv8-a -mutune=generic -flto=auto"
-            export CXXFLAGS="-O3 -marh=armv8-a -mutune=generic -flto=auto"
-            export LDFLAGS="-O3 -flto=auto"
-          fi
           echo "CPU核心数量：$(nproc)"
           echo "mesa 目标版本：${mesaVersion:-latestDev}"
           echo "virgl server目标版本：${virglVersion:-latestDev}"
@@ -85,12 +80,17 @@ jobs:
       - name: meson configure - mesa driver
         run: |
           cd /tmp/mesa/
-          if ! meson setup builddir -Dprefix=/tmp/glibc -Dbuildtype=release -Dplatforms=x11,wayland -Dgallium-drivers=freedreno,virgl,zink,panfrost,llvmpipe -Dvulkan-drivers=freedreno,panfrost,swrast,virtio -Degl=enabled -Dgles1=disabled -Dgles2=enabled -Dglvnd=enabled -Dglx=dri -Dllvm=enabled -Dgallium-extra-hud=true -Dgallium-va=enabled -Dgallium-vdpau=enabled -Dgbm=enabled -Dvulkan-layers=device-select,overlay -Dfreedreno-kmds=kgsl,msm -Dlibunwind=disabled -Dvalgrind=disabled -Dmicrosoft-clc=disabled; then
+          if ! meson setup builddir --libdir=lib -Dprefix=/tmp/glibc -Dbuildtype=release -Dplatforms=x11,wayland -Dgallium-drivers=freedreno,virgl,zink,panfrost,llvmpipe -Dvulkan-drivers=freedreno,panfrost,swrast,virtio -Degl=enabled -Dgles1=disabled -Dgles2=enabled -Dglvnd=enabled -Dglx=dri -Dllvm=enabled -Dgallium-extra-hud=true -Dgallium-va=enabled -Dgallium-vdpau=enabled -Dgbm=enabled -Dvulkan-layers=device-select,overlay -Dfreedreno-kmds=kgsl,msm -Dlibunwind=disabled -Dvalgrind=disabled -Dmicrosoft-clc=disabled; then
             echo "mesa driver构建彻底失败！"
             exit 1
           fi
       - name: meson compile & install - mesa driver
         run: |
+          if [[ $enableO3 == true ]]; then
+            export CFLAGS="-O3 -marh=armv8-a -mutune=generic -flto=auto"
+            export CXXFLAGS="-O3 -marh=armv8-a -mutune=generic -flto=auto"
+            export LDFLAGS="-O3 -flto=auto"
+          fi
           cd /tmp/mesa
           if ! meson compile -C builddir; then
             echo "mesa driver编译彻底失败！"
@@ -101,12 +101,17 @@ jobs:
       - name: meson configure - virgl
         run: |
           cd /tmp/virgl
-          if ! meson setup builddir -Dprefix=/tmp/glibc -Dbuildtype=release -Dvenus=true -Dplatforms=glx,egl; then
+          if ! meson setup builddir --libdir=lib -Dprefix=/tmp/glibc -Dbuildtype=release -Dvenus=true -Dplatforms=glx,egl; then
             echo "virgl server构建彻底失败！"
             exit 1
           fi
       - name: meson compile & install - virgl
         run: |
+          if [[ $enableO3 == true ]]; then
+            export CFLAGS="-O3 -marh=armv8-a -mutune=generic -flto=auto"
+            export CXXFLAGS="-O3 -marh=armv8-a -mutune=generic -flto=auto"
+            export LDFLAGS="-O3 -flto=auto"
+          fi
           cd /tmp/virgl
           if ! meson compile -C builddir; then
             echo "virgl server编译彻底失败！"
