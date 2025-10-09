@@ -1,11 +1,10 @@
-name: build mesa driver and virgl (no kgsl patch)
+name: build mesa driver (no kgsl patch)
 
 on:
   workflow_dispatch:
 
 env:
   mesaVersion: mesa-25.1.0
-  virglVersion: virglrenderer-1.2.0
   enableO3: true
 
 jobs:
@@ -17,7 +16,6 @@ jobs:
         run: |
           echo "CPU核心数量：$(nproc)"
           echo "mesa 目标版本：${mesaVersion:-latestDev}"
-          echo "virgl server目标版本：${virglVersion:-latestDev}"
           echo "o3是否启用：${enableO3:-false}"
           echo -e 'deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ noble main restricted universe multiverse\ndeb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ noble main restricted universe multiverse\ndeb https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ noble-updates main restricted universe multiverse\ndeb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ noble-updates main restricted universe multiverse\ndeb https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ noble-backports main restricted universe multiverse\ndeb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ noble-backports main restricted universe multiverse\ndeb http://ports.ubuntu.com/ubuntu-ports/ noble-security main restricted universe multiverse\ndeb-src http://ports.ubuntu.com/ubuntu-ports/ noble-security main restricted universe multiverse' | sudo tee /etc/apt/sources.list
           sudo apt update -y
@@ -40,11 +38,6 @@ jobs:
           else
             git clone https://gitlab.freedesktop.org/mesa/mesa.git
           fi
-          if [[ ! -z $virglVersion ]]; then
-            git clone -b $virglVersion https://gitlab.freedesktop.org/virgl/virglrenderer.git virgl
-          else
-            git clone  https://gitlab.freedesktop.org/virgl/virglrenderer.git virgl
-          fi
           wget -O /tmp/glibc.tar.xz https://github.com/Waim908/lite-termux-glibc/releases/download/nodownload/Lite-glibc-2.41-1.tar.xz 
           tar -xf /tmp/glibc.tar.xz -C /data/data/com.termux/files/usr/
           cd /tmp/mesa
@@ -55,28 +48,22 @@ jobs:
           else
             echo "mesaVer=$mesaVersion" >> $GITHUB_OUTPUT
           fi
-          echo "应用virgl-socket-path.patch"
-          if ! patch -p1 < /tmp/patch/mesa/virgl-socket-path.patch; then
-            echo "失败"
-            exit 1
-          fi
           echo "应用fix-for-anon-file.patch"
           if ! patch -p1 < /tmp/patch/mesa/fix-for-anon-file.patch; then
             echo "失败"
             exit 1
           fi
-          cd /tmp/virgl
-          if [[ -z $virglVersion ]]; then
-            allHash=$(git rev-parse HEAD)
-            export virglVersion=${$allHash:0:8}
-            echo "virglVer=$virglVersion" >> $GITHUB_OUTPUT
-          else
-            echo "virglVer=$virglVersion" >> $GITHUB_OUTPUT
-          fi          
-          if ! patch -p1 < /tmp/patch/virgl.patch; then
-            echo "virgl补丁应用失败"
+          echo "应用0013-fix-bad-syscall.patch"
+          if ! patch -p1 < /tmp/patch/v25/0013-fix-bad-syscall.patch; then
+            echo "失败"
             exit 1
           fi
+          echo "应用0014-freedreno-HACK-GL_ARB_timer_query.patch"
+          if ! patch -p1 < /tmp/patch/v25/0014-freedreno-HACK-GL_ARB_timer_query.patch; then
+            echo "失败"
+            exit 1
+          fi
+      
       - name: meson configure - mesa driver
         run: |
           cd /tmp/mesa/
@@ -98,45 +85,26 @@ jobs:
           else
             meson install -C builddir
           fi
-      - name: meson configure - virgl
-        run: |
-          cd /tmp/virgl
-          if ! meson setup builddir --libdir=lib -Dprefix=/tmp/glibc -Dbuildtype=release -Dvenus=true -Dplatforms=glx,egl; then
-            echo "virgl server构建彻底失败！"
-            exit 1
-          fi
-      - name: meson compile & install - virgl
-        run: |
-          if [[ $enableO3 == true ]]; then
-            export CFLAGS="-O3 -marh=armv8-a -mutune=generic -flto=auto"
-            export CXXFLAGS="-O3 -marh=armv8-a -mutune=generic -flto=auto"
-            export LDFLAGS="-O3 -flto=auto"
-          fi
-          cd /tmp/virgl
-          if ! meson compile -C builddir; then
-            echo "virgl server编译彻底失败！"
-            exit 1
-          else
-            meson install -C builddir
-          fi
 
       - name: package
         run: |
           . /tmp/patch/patchelf.sh
           cd /tmp
           cd /tmp/glibc && patchelf_glibc
+          cd /tmp/glibc/share/vulkan/icd.d/
+          find . -name "*.json" -exec sed -i 's|"/tmp/|"/data/data/com.termux/files/usr/|g' {} \;
           cd /tmp
-          tar -I 'xz -T$(nproc)' -cvf /tmp/mesa-$mesaVersion-virgl-$virglVersion.tar.xz glibc/
+          tar -I 'xz -T$(nproc)' -cf /tmp/mesa-$mesaVersion.tar.xz glibc/
       
       - name: package and release
         uses: softprops/action-gh-release@v2
         with:
-          name: mesa-driver-${{ steps.getRes.outputs.mesaVer }}-virglserver-${{ steps.getRes.outputs.virglVer }}
+          name: mesa-driver-${{ steps.getRes.outputs.mesaVer }}
           draft: false
           prerelease: false
-          tag_name: mesa-${{ steps.getRes.outputs.mesaVer }}-virgl-${{ steps.getRes.outputs.virglVer }}
-          body: panfrost turnip(no kgsl patch) llvmpipe virgl virtio virglserver=${{ steps.getRes.outputs.virglVer }}
+          tag_name: mesa-${{ steps.getRes.outputs.mesaVer }}
+          body: panfrost turnip(no kgsl patch) llvmpipe virgl virtio
           files: |
-            /tmp/mesa-${{ steps.getRes.outputs.mesaVer }}-virgl-${{ steps.getRes.outputs.virglVer }}.tar.xz
+            /tmp/mesa-${{ steps.getRes.outputs.mesaVer }}.tar.xz
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
