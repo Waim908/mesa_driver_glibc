@@ -7,6 +7,8 @@ env:
   mesaVersion: mesa-25.1.0
   enableO3: true
   vkVersion: 1.3.301
+  LD_RPATH: /data/data/com.termux/files/usr/glibc
+  LD_FILE: ld-linux-aarch64.so.1
 
 jobs:
   ubuntu:
@@ -26,13 +28,7 @@ jobs:
           pip install PyYAML --break-system-package
           pip install meson --break-system-package
           sudo apt build-dep mesa -y
-          sudo mkdir /data
-          sudo chmod 777 /data
-          mkdir /data/data/
-          mkdir /data/data/com.termux
-          mkdir /data/data/com.termux/files/
-          mkdir /data/data/com.termux/files/usr
-          mkdir /data/data/com.termux/files/usr/glibc
+          mkdir -p /data/data/com.termux/files/usr/glibc
           cd /tmp
           git clone https://github.com/Waim908/mesa_driver_glibc.git patch
           if [[ ! -z $mesaVersion ]]; then
@@ -40,8 +36,8 @@ jobs:
           else
             git clone https://gitlab.freedesktop.org/mesa/mesa.git
           fi
-          wget -O /tmp/glibc.tar.xz https://github.com/Waim908/lite-termux-glibc/releases/download/nodownload/Lite-glibc-2.41-1.tar.xz 
-          tar -xf /tmp/glibc.tar.xz -C /data/data/com.termux/files/usr/
+          # wget -O /tmp/glibc.tar.xz https://github.com/Waim908/lite-termux-glibc/releases/download/nodownload/Lite-glibc-2.41-1.tar.xz 
+          # tar -xf /tmp/glibc.tar.xz -C /data/data/com.termux/files/usr/
           cd /tmp/mesa
           if [[ -z $mesaVersion ]]; then
             allHash=$(git rev-parse HEAD)
@@ -69,7 +65,7 @@ jobs:
       - name: meson configure - mesa driver
         run: |
           cd /tmp/mesa/
-          if ! meson setup builddir --libdir=lib -Dprefix=/tmp/glibc -Dbuildtype=release -Dplatforms=x11 -Dgallium-drivers=freedreno,virgl,zink,panfrost,llvmpipe -Dvulkan-drivers=freedreno,panfrost,swrast,virtio -Degl=enabled -Dgles1=disabled -Dgles2=enabled -Dglvnd=enabled -Dglx=dri -Dllvm=enabled -Dgallium-extra-hud=true -Dgallium-va=enabled -Dgallium-vdpau=enabled -Dgbm=enabled -Dvulkan-layers=device-select,overlay -Dfreedreno-kmds=kgsl,msm -Dlibunwind=disabled -Dvalgrind=disabled -Dmicrosoft-clc=disabled; then
+          if ! meson setup builddir --libdir=lib -Dprefix=/data/data/com.termux/files/usr/glibc -Dbuildtype=release -Dplatforms=x11 -Dgallium-drivers=freedreno,virgl,zink,panfrost,llvmpipe -Dvulkan-drivers=freedreno,panfrost,swrast,virtio -Degl=enabled -Dgles1=disabled -Dgles2=enabled -Dglvnd=enabled -Dglx=dri -Dllvm=enabled -Dgallium-extra-hud=true -Dgallium-va=enabled -Dgallium-vdpau=enabled -Dgbm=enabled -Dvulkan-layers=device-select,overlay -Dfreedreno-kmds=kgsl,msm -Dlibunwind=disabled -Dvalgrind=disabled -Dmicrosoft-clc=disabled; then
             echo "mesa driver构建彻底失败！"
             exit 1
           fi
@@ -90,15 +86,23 @@ jobs:
 
       - name: package
         run: |
-          . /tmp/patch/patchelf.sh
-          cd /tmp
-          cd /tmp/glibc && patchelf_glibc
-          cd /tmp/glibc/share/vulkan/icd.d/
-          find . -name "*.json" -exec sed -i \
-            -e 's|/tmp/|/data/data/com.termux/files/usr/|g' \
-            -e "s/\"api_version\": \"[^\"]*\"/\"api_version\": \"$vkVersion\"/g" \
-            {} \;
-          cd /tmp
+          # . /tmp/patch/patchelf.sh
+          # cd /tmp
+          # cd /tmp/glibc && patchelf_glibc
+          # cd /tmp/glibc/share/vulkan/icd.d/
+          # find . -name "*.json" -exec sed -i \
+          #   -e 's|/tmp/|/data/data/com.termux/files/usr/|g' \
+          #   -e "s/\"api_version\": \"[^\"]*\"/\"api_version\": \"$vkVersion\"/g" \
+          #   {} \;
+          # cd /tmp
+          cd /data/data/com.termux/files/usr/glibc/
+          find "$target_dir" -type f -exec file {} + | grep -E ":.*ELF" | cut -d: -f1 | while read -r elf_file; do
+              echo "Patching $elf_file..."
+              patchelf --set-rpath "$LD_RPATH" --set-interpreter "$LD_FILE" "$elf_file" || {
+                  echo "Failed to patch $elf_file" >&2
+                  continue
+              }
+          done
           tar -I 'xz -T$(nproc)' -cf /tmp/mesa-$mesaVersion.tar.xz glibc/
       
       - name: package and release
