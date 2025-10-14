@@ -71,7 +71,7 @@ jobs:
             exit 1
           fi
           echo "应用0014-freedreno-HACK-GL_ARB_timer_query.patch"
-          if ! patch -p1 < /tmp/patch/v25/0014-freedreno-HACK-GL_ARB_timer_query.patch; then
+          if ! patch -p1 < /tmp/patch/v25/0014-freedreno-HACK-GL_ARB_timer_query2.patch; then
             echo "失败"
             exit 1
           fi
