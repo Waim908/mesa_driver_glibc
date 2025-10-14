@@ -2,11 +2,21 @@ name: build mesa driver (no kgsl patch)
 
 on:
   workflow_dispatch:
+    inputs:
+      inputMesaBranch:
+        description: "输入Mesa驱动分支"
+        required: true
+        default: "mesa-25.1.0"
+      inputEnableO3:
+        description: "是否启用O3"
+        required: true
+        default: "true"
+
 
 env:
-  mesaVersion: mesa-25.1.0
-  enableO3: true
-  vkVersion: 1.3.301
+  mesaVersion: ${{ github.event.inputs.inputMesaBranch }}
+  enableO3: ${{ github.event.inputs.inputEnableO3 }}
+  # vkVersion: 1.3.301
   LD_RPATH: /data/data/com.termux/files/usr/glibc
   LD_FILE: ld-linux-aarch64.so.1
 
@@ -20,9 +30,10 @@ jobs:
           echo "CPU核心数量：$(nproc)"
           echo "mesa 目标版本：${mesaVersion:-latestDev}"
           echo "o3是否启用：${enableO3:-false}"
-          echo "vulkan api版本：$vkVersion"
+          # echo "vulkan api版本：$vkVersion"
           echo -e 'deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ noble main restricted universe multiverse\ndeb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ noble main restricted universe multiverse\ndeb https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ noble-updates main restricted universe multiverse\ndeb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ noble-updates main restricted universe multiverse\ndeb https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ noble-backports main restricted universe multiverse\ndeb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/ noble-backports main restricted universe multiverse\ndeb http://ports.ubuntu.com/ubuntu-ports/ noble-security main restricted universe multiverse\ndeb-src http://ports.ubuntu.com/ubuntu-ports/ noble-security main restricted universe multiverse' | sudo tee /etc/apt/sources.list
-          sudo apt update -y
+          sudo apt update -y 
+          sudo apt upgrade -y
           sudo apt install patchelf ninja-build cmake python3-pip libepoxy-dev -y 
           pip install mako --break-system-package
           pip install PyYAML --break-system-package
@@ -65,10 +76,11 @@ jobs:
       - name: meson configure - mesa driver
         run: |
           cd /tmp/mesa/
-          if ! meson setup builddir --libdir=lib -Dprefix=/data/data/com.termux/files/usr/glibc -Dbuildtype=release -Dplatforms=x11 -Dgallium-drivers=freedreno,virgl,zink,panfrost,llvmpipe -Dvulkan-drivers=freedreno,panfrost,swrast,virtio -Degl=enabled -Dgles1=disabled -Dgles2=enabled -Dglvnd=enabled -Dglx=dri -Dllvm=enabled -Dgallium-extra-hud=true -Dgallium-va=enabled -Dgallium-vdpau=enabled -Dgbm=enabled -Dvulkan-layers=device-select,overlay -Dfreedreno-kmds=kgsl,msm -Dlibunwind=disabled -Dvalgrind=disabled -Dmicrosoft-clc=disabled; then
+          if ! meson setup builddir --libdir=lib -Dprefix=/data/data/com.termux/files/usr/glibc -Dbuildtype=release -Dplatforms=x11 -Dgallium-drivers=freedreno,virgl,zink,panfrost,llvmpipe -Dvulkan-drivers=freedreno,panfrost,swrast,virtio -Degl=enabled -Dgles1=disabled -Dgles2=enabled -Dglvnd=enabled -Dglx=dri -Dllvm=enabled -Dgallium-extra-hud=true -Dgallium-va=enabled -Dgallium-vdpau=enabled -Dgbm=enabled -Dvulkan-layers=device-select,overlay -Dfreedreno-kmds=kgsl,msm -Dlibunwind=disabled -Dvalgrind=disabled -Dmicrosoft-clc=disabled -Dvideo-codecs=all; then
             echo "mesa driver构建彻底失败！"
             exit 1
           fi
+
       - name: meson compile & install - mesa driver
         run: |
           if [[ $enableO3 == true ]]; then
@@ -103,6 +115,7 @@ jobs:
                   continue
               }
           done
+          cd /data/data/com.termux/files/usr/
           tar -I 'xz -T$(nproc)' -cf /tmp/mesa-$mesaVersion.tar.xz glibc/
       
       - name: package and release
