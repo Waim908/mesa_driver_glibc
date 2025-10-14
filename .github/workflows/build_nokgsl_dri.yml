@@ -39,7 +39,10 @@ jobs:
           pip install PyYAML --break-system-package
           pip install meson --break-system-package
           sudo apt build-dep mesa -y
+          sudo mkdir -p /data
+          sudo chmod 777 /data
           mkdir -p /data/data/com.termux/files/usr/glibc
+
           cd /tmp
           git clone https://github.com/Waim908/mesa_driver_glibc.git patch
           if [[ ! -z $mesaVersion ]]; then
