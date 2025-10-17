@@ -111,7 +111,7 @@ jobs:
           #   {} \;
           # cd /tmp
           cd /data/data/com.termux/files/usr/glibc/
-          find "$target_dir" -type f -exec file {} + | grep -E ":.*ELF" | cut -d: -f1 | while read -r elf_file; do
+          find . -type f -exec file {} + | grep -E ":.*ELF" | cut -d: -f1 | while read -r elf_file; do
               echo "Patching $elf_file..."
               patchelf --set-rpath "$LD_RPATH" --set-interpreter "$LD_FILE" "$elf_file" || {
                   echo "Failed to patch $elf_file" >&2
